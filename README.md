@@ -79,7 +79,3 @@ MyGo needs no cgo, so any machine builds for every platform. The Windows install
 1. Open **Actions → Release → Run workflow** and enter a version, such as `0.2.0`. The workflow sets it in `mygo.config.ts`, commits, and tags `v0.2.0`. You can also push a tag yourself after changing the version.
 2. Windows, macOS and Linux build at the same time and upload to a draft release with generated notes.
 3. Review the draft on the Releases page and publish it.
-
----
-
-Made with care by [Rafał Filipek](https://rafal.im).
