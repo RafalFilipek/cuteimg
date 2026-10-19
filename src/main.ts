@@ -113,7 +113,7 @@ const chips = (sc: string) =>
   sc
     .split("+")
     .map((k) => `<kbd>${k}</kbd>`)
-    .join("+");
+    .join("");
 
 // ---------- shortcut dialog ----------
 
@@ -123,9 +123,10 @@ style.textContent = `
   #scDialog::backdrop { background: rgba(10,12,18,.45); }
   #scDialog h3 { margin: 0 0 4px; font-size: 17px; }
   #scDialog p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
-  .sc-box { margin: 16px 0 12px; min-height: 64px; border: 1.5px dashed var(--line); border-radius: 12px; display: grid; place-items: center; font-size: 15px; padding: 10px; text-align: center; }
+  .sc-box { margin: 16px 0 12px; min-height: 64px; border: 1.5px dashed var(--line); border-radius: 12px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; font-size: 15px; padding: 10px; text-align: center; }
   .sc-box.rec { border-color: var(--accent); }
-  .sc-box kbd { font-family: var(--font-num); font-size: 14px; background: var(--hover); border: 1px solid var(--line); border-bottom-width: 3px; border-radius: 6px; padding: 3px 9px; margin: 0 3px; color: var(--fg); }
+  .sc-box .sc-more { color: var(--muted); }
+  .sc-box kbd { font-family: var(--font-num); font-size: 14px; background: var(--hover); border: 1px solid var(--line); border-bottom-width: 3px; border-radius: 6px; padding: 3px 9px; color: var(--fg); }
   .sc-actions { display: flex; gap: 8px; flex-wrap: wrap; }
   .sc-actions .tbtn, .sc-foot .tbtn { border: 1px solid var(--line); padding: 0 12px; }
   .sc-status { min-height: 20px; margin-top: 12px; font-size: 13px; line-height: 1.5; }
@@ -166,7 +167,7 @@ function setStatus(text: string, kind: "ok" | "err" | "wait" | "" = "") {
 
 function renderBox(live = "") {
   box.classList.toggle("rec", recording);
-  if (recording) box.innerHTML = live ? chips(live) + "<span>+…</span>" : "Press the keys you want…";
+  if (recording) box.innerHTML = live ? chips(live) + '<span class="sc-more">…</span>' : "Press the keys you want…";
   else box.innerHTML = current ? chips(current) : "<span>No shortcut</span>";
 }
 
