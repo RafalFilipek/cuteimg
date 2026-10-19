@@ -74,8 +74,16 @@ MyGo needs no cgo, so any machine builds for every platform. The Windows install
 | `capture_*.go` | Screen capture for each system |
 | `capslock_windows.go` | The keyboard hook behind CapsLock shortcuts on Windows |
 
+## Updates
+
+cuteimg checks for a new version once a day and shows its release notes with **Install Update**, **Remind Me Later** and **Skip This Version**. The tray menu has **Check for Updates…**. Updates come from this repository's latest release and are signed: the app accepts only files signed with the key whose public half is in `mygo.config.ts`. The portable Windows app doesn't update itself; the installed one does.
+
+The release notes are the version's section in `CHANGELOG.md`, under a `## 0.2.0` heading. Add it before you release.
+
 ## Releases
 
 1. Open **Actions → Release → Run workflow** and enter a version, such as `0.2.0`. The workflow sets it in `mygo.config.ts`, commits, and tags `v0.2.0`. You can also push a tag yourself after changing the version.
 2. Windows, macOS and Linux build at the same time and upload to a draft release with generated notes.
-3. Review the draft on the Releases page and publish it.
+3. Review the draft on the Releases page and publish it. Installed apps update to it from then on.
+
+The workflow signs the updates with the `MYGO_UPDATER_PRIVATE_KEY` repository secret, the contents of `mygo-update.key` from `mygo keygen`. Keep that key safe: installed apps accept updates signed only with it.

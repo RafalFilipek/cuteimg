@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 
 	"github.com/egoist/mygo"
+	"github.com/egoist/mygo/plugins/updater"
 )
 
 //go:embed tray.png
@@ -110,6 +111,7 @@ func updateTray() {
 	tray.SetMenu(mygo.NewMenu([]*mygo.MenuItem{
 		{Label: label, Click: func(*mygo.MenuItem, *mygo.Window) { capture() }},
 		{Label: "Open editor", Click: func(*mygo.MenuItem, *mygo.Window) { showEditor() }},
+		updater.MenuItem(),
 		mygo.Separator(),
 		{Label: "Quit cuteimg", Click: func(*mygo.MenuItem, *mygo.Window) { quitting = true; mygo.App.Quit() }},
 	}))
@@ -157,6 +159,7 @@ func main() {
 		return
 	}
 	openLog()
+	mygo.Use(updater.Plugin)
 	mygo.Bind(Editor{})
 
 	mygo.App.OnSecondInstance(func([]string, string) { showEditor() })
