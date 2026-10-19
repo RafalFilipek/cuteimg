@@ -1,15 +1,21 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"runtime"
+	"strings"
+	"sync/atomic"
 	"syscall"
+	"time"
 	"unsafe"
 )
 
-// Windows has no CapsLock modifier for RegisterHotKey, so CapsLock+C comes
-// from a low-level keyboard hook. CapsLock held with another key works as a
-// modifier; tapped alone it still toggles Caps Lock.
+// Windows has no CapsLock modifier for RegisterHotKey, so CapsLock
+// shortcuts such as CapsLock+C come from a low-level keyboard hook. The hook
+// takes only the key of the shortcut while CapsLock is held and lets
+// everything else through, CapsLock itself included, so tools that use
+// CapsLock as a hyper key (Raycast, PowerToys) keep working.
 
 var (
 	user32              = syscall.NewLazyDLL("user32.dll")
@@ -19,6 +25,7 @@ var (
 	procGetMessage      = user32.NewProc("GetMessageW")
 	procKeybdEvent      = user32.NewProc("keybd_event")
 	procGetModuleHandle = kernel32.NewProc("GetModuleHandleW")
+	procGetKeyState     = user32.NewProc("GetKeyState")
 )
 
 const (
@@ -28,7 +35,6 @@ const (
 	wmSysKeyDown   = 0x0104
 	wmSysKeyUp     = 0x0105
 	vkCapital      = 0x14
-	vkC            = 0x43
 	llkhfInjected  = 0x10
 	keyeventfKeyUp = 0x0002
 )
@@ -38,35 +44,67 @@ type kbdLLHookStruct struct {
 	ExtraInfo                     uintptr
 }
 
-var capsDown, capsUsed bool
+var capsDown, capsUsed, capsWasOn bool
+
+func capsLockOn() bool {
+	r, _, _ := procGetKeyState.Call(vkCapital)
+	return r&1 != 0
+}
+
+// capsKey is the virtual key that triggers the shortcut together with
+// CapsLock, or 0 when no CapsLock shortcut is active.
+var capsKey atomic.Uint32
+
+// setCapsKey activates CapsLock+key: a letter, a digit, F1 to F12 or Space.
+func setCapsKey(key string) error {
+	var vk uint32
+	switch k := strings.ToUpper(key); {
+	case len(k) == 1 && (k[0] >= 'A' && k[0] <= 'Z' || k[0] >= '0' && k[0] <= '9'):
+		vk = uint32(k[0])
+	case k == "SPACE":
+		vk = 0x20
+	case len(k) >= 2 && len(k) <= 3 && k[0] == 'F':
+		var n uint32
+		for _, c := range k[1:] {
+			if c < '0' || c > '9' {
+				n = 0
+				break
+			}
+			n = n*10 + uint32(c-'0')
+		}
+		if n >= 1 && n <= 12 {
+			vk = 0x6F + n
+		}
+	}
+	if vk == 0 {
+		return errors.New("unsupported key " + key)
+	}
+	capsKey.Store(vk)
+	return nil
+}
 
 func keyboardHook(nCode int, wParam, lParam uintptr) uintptr {
 	if nCode == 0 {
 		k := (*kbdLLHookStruct)(unsafe.Pointer(lParam))
 		down := wParam == wmKeyDown || wParam == wmSysKeyDown
 		up := wParam == wmKeyUp || wParam == wmSysKeyUp
-		if k.Flags&llkhfInjected == 0 {
+		if key := capsKey.Load(); key != 0 && k.Flags&llkhfInjected == 0 {
 			switch {
 			case k.VkCode == vkCapital && down:
 				if !capsDown {
-					capsDown, capsUsed = true, false
+					capsDown, capsUsed, capsWasOn = true, false, capsLockOn()
 				}
-				return 1
 			case k.VkCode == vkCapital && up:
 				capsDown = false
-				if !capsUsed {
-					go toggleCapsLock()
+				if capsUsed {
+					go restoreCapsLock(capsWasOn)
 				}
-				return 1
-			case capsDown && k.VkCode == vkC:
+			case capsDown && k.VkCode == key:
 				if down && !capsUsed {
-					log.Println("CapsLock+C")
-					capture()
+					go onShortcut()
 				}
 				capsUsed = true
 				return 1
-			case capsDown && down:
-				capsUsed = true
 			}
 		}
 	}
@@ -74,16 +112,25 @@ func keyboardHook(nCode int, wParam, lParam uintptr) uintptr {
 	return r
 }
 
-// toggleCapsLock replays a plain CapsLock tap, which the hook lets through
+// restoreCapsLock undoes the Caps Lock toggle that the shortcut's CapsLock
+// press caused, when nothing else (such as a hyper key tool) swallowed it.
+func restoreCapsLock(wasOn bool) {
+	time.Sleep(30 * time.Millisecond)
+	if capsLockOn() != wasOn {
+		toggleCapsLock()
+	}
+}
+
+// toggleCapsLock replays a plain CapsLock tap, which the hook ignores
 // because it is injected.
 func toggleCapsLock() {
 	procKeybdEvent.Call(vkCapital, 0x3A, 0, 0)
 	procKeybdEvent.Call(vkCapital, 0x3A, keyeventfKeyUp, 0)
 }
 
-// installCapsShortcut runs the hook on its own thread with the message loop
+// installCapsHook runs the hook on its own thread with the message loop
 // a low-level hook needs.
-func installCapsShortcut() {
+func installCapsHook() {
 	go func() {
 		runtime.LockOSThread()
 		mod, _, _ := procGetModuleHandle.Call(0)
@@ -92,7 +139,6 @@ func installCapsShortcut() {
 			log.Println("keyboard hook:", err)
 			return
 		}
-		log.Println("CapsLock+C ready")
 		var msg [64]byte
 		for {
 			r, _, _ := procGetMessage.Call(uintptr(unsafe.Pointer(&msg[0])), 0, 0, 0)

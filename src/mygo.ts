@@ -17,6 +17,17 @@ export const Editor = {
   copy(png: string): Promise<void> {
     return call("Editor.Copy", png);
   },
+  /** DefaultShortcut returns the capture shortcut cuteimg starts with. */
+  defaultShortcut(): Promise<string> {
+    return call("Editor.DefaultShortcut");
+  },
+  /**
+   * PauseShortcut turns the shortcut off while a new one is recorded, so that
+   * pressing keys doesn't trigger it.
+   */
+  pauseShortcut(on: boolean): Promise<void> {
+    return call("Editor.PauseShortcut", on);
+  },
   /**
    * Save asks where to save the PNG and writes it. It returns the path, or ""
    * when the user cancels.
@@ -24,9 +35,23 @@ export const Editor = {
   save(png: string, name: string): Promise<string> {
     return call("Editor.Save", png, name);
   },
-  /** Shortcut returns the label of the capture shortcut on this system. */
+  /**
+   * SetShortcut makes acc, such as "Ctrl+Shift+2", the capture shortcut and
+   * saves it.
+   */
+  setShortcut(acc: string): Promise<void> {
+    return call("Editor.SetShortcut", acc);
+  },
+  /** Shortcut returns the active capture shortcut, or "" when there is none. */
   shortcut(): Promise<string> {
     return call("Editor.Shortcut");
+  },
+  /**
+   * TestShortcut turns testing on or off: while on, pressing the shortcut sends
+   * shortcutPressed instead of capturing the screen.
+   */
+  testShortcut(on: boolean): Promise<void> {
+    return call("Editor.TestShortcut", on);
   },
 } as const;
 
@@ -36,4 +61,6 @@ export const Editor = {
 export const events = {
   /** Captured carries a fresh screen capture (PNG) to the editor. */
   captured: event<string>("captured"),
+  /** ShortcutPressed tells the editor that the shortcut works, while testing. */
+  shortcutPressed: event<string>("shortcutPressed"),
 } as const;

@@ -20,7 +20,7 @@ Beautiful screenshots on Windows, macOS and Linux. Capture or paste a screenshot
 
 | Action | Windows | macOS | Linux |
 |---|---|---|---|
-| Capture an area (global) | CapsLock+C | ⌘⇧2 | Ctrl+Shift+2 |
+| Capture an area (global, by default) | CapsLock+C | Cmd+Shift+2 | Ctrl+Shift+2 |
 | Paste an image | Ctrl+V | ⌘V | Ctrl+V |
 | Select / Arrow / Rectangle / Ellipse / Pixelate | V / A / R / O / P | same | same |
 | Undo / Redo | Ctrl+Z / Ctrl+Y | ⌘Z / ⌘⇧Z | Ctrl+Z / Ctrl+Y |
@@ -28,7 +28,9 @@ Beautiful screenshots on Windows, macOS and Linux. Capture or paste a screenshot
 | Copy the result | Ctrl+C | ⌘C | Ctrl+C |
 | Save a PNG | Ctrl+S | ⌘S | Ctrl+S |
 
-On Windows, CapsLock works as a modifier while you hold it. Tapping it on its own still toggles Caps Lock.
+Change the capture shortcut with the keyboard button in the toolbar: **Record new** takes the next combination you press, and **Test** checks that it reaches cuteimg. The choice is saved in `settings.json` next to the log.
+
+On Windows, CapsLock works as a modifier while you hold it (CapsLock plus a letter, a digit, F1–F12 or Space). Tapping it on its own still toggles Caps Lock.
 
 ## How capture works
 
@@ -66,11 +68,14 @@ MyGo needs no cgo, so any machine builds for every platform. The Windows install
 | Path | What it is |
 |---|---|
 | `index.html` | The editor: canvas rendering, tools, backgrounds and export, in plain JavaScript |
-| `src/main.ts` | Connects the editor to Go: copy, save and captured images |
+| `src/main.ts` | Connects the editor to Go: copy, save, captured images and the shortcut dialog |
 | `main.go` | The app: window, tray, clipboard, save dialog |
-| `capture_*.go` | Screen capture and the global shortcut for each system |
-| `capslock_windows.go` | The CapsLock+C keyboard hook on Windows |
+| `shortcut*.go` | The capture shortcut: registering, testing and saving it |
+| `capture_*.go` | Screen capture for each system |
+| `capslock_windows.go` | The keyboard hook behind CapsLock shortcuts on Windows |
 
 ## Releases
 
-Push a tag that matches `version` in `mygo.config.ts`, for example `git tag v0.1.0 && git push origin v0.1.0`. The release workflow builds every platform and attaches the files to a draft release.
+1. Open **Actions → Release → Run workflow** and enter a version, such as `0.2.0`. The workflow sets it in `mygo.config.ts`, commits, and tags `v0.2.0`. You can also push a tag yourself after changing the version.
+2. Windows, macOS and Linux build at the same time and upload to a draft release with generated notes.
+3. Review the draft on the Releases page and publish it.

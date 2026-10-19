@@ -8,18 +8,10 @@ import (
 	"os/exec"
 	"path/filepath"
 	"time"
-
-	"github.com/egoist/mygo"
 )
 
-const shortcut = "Ctrl+Shift+2"
-const shortcutLabel = "Ctrl+Shift+2"
-
-func installShortcut() {
-	if err := mygo.GlobalShortcut.Register(shortcut, capture); err != nil {
-		log.Println("shortcut:", err)
-	}
-}
+const defaultShortcut = "Ctrl+Shift+2"
+const capsName = "Ctrl"
 
 // snipTools are area screenshot tools, tried in order; the first one that is
 // installed takes the capture. {out} is replaced by a temporary file.

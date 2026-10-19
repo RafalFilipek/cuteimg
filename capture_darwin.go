@@ -1,23 +1,14 @@
 package main
 
 import (
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"time"
-
-	"github.com/egoist/mygo"
 )
 
-const shortcut = "Cmd+Shift+2"
-const shortcutLabel = "⌘⇧2"
-
-func installShortcut() {
-	if err := mygo.GlobalShortcut.Register(shortcut, capture); err != nil {
-		log.Println("shortcut:", err)
-	}
-}
+const defaultShortcut = "Cmd+Shift+2"
+const capsName = "Cmd"
 
 // snip runs the interactive macOS screenshot tool. It returns nil when the
 // user presses Esc.

@@ -8,10 +8,6 @@ import (
 	"github.com/egoist/mygo"
 )
 
-const shortcutLabel = "CapsLock+C"
-
-func installShortcut() { installCapsShortcut() }
-
 // snip opens the Windows snipping overlay, which puts the selection on the
 // clipboard, and waits for a new image there. It returns nil when the user
 // cancels or nothing arrives within two minutes.

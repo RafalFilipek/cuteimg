@@ -47,9 +47,6 @@ func (Editor) Save(png []byte, name string) (string, error) {
 // Capture starts a screen capture, the same as the global shortcut.
 func (Editor) Capture() { capture() }
 
-// Shortcut returns the label of the capture shortcut on this system.
-func (Editor) Shortcut() string { return shortcutLabel }
-
 // Captured carries a fresh screen capture (PNG) to the editor.
 var Captured = mygo.NewEvent[[]byte]("captured")
 
@@ -90,21 +87,47 @@ func showEditor() {
 	}
 	win.Show()
 	win.Restore()
+	raise(win)
 	win.Focus()
 }
 
 var quitting bool
+
+var tray *mygo.Tray
+
+// updateTray shows the current shortcut in the tray's menu and tooltip.
+func updateTray() {
+	if tray == nil {
+		return
+	}
+	label := "Capture area"
+	tip := "cuteimg"
+	if current != "" {
+		label += "\t" + current
+		tip += ": " + current + " captures the screen"
+	}
+	tray.SetToolTip(tip)
+	tray.SetMenu(mygo.NewMenu([]*mygo.MenuItem{
+		{Label: label, Click: func(*mygo.MenuItem, *mygo.Window) { capture() }},
+		{Label: "Open editor", Click: func(*mygo.MenuItem, *mygo.Window) { showEditor() }},
+		mygo.Separator(),
+		{Label: "Quit cuteimg", Click: func(*mygo.MenuItem, *mygo.Window) { quitting = true; mygo.App.Quit() }},
+	}))
+}
 
 func openEditor() {
 	win = mygo.NewWindow(mygo.WindowOptions{
 		Title:           "cuteimg",
 		Width:           1280,
 		Height:          820,
-		MinWidth:        720,
+		MinWidth:        980,
 		MinHeight:       480,
 		BackgroundColor: "light-dark(#eef0f4, #13151b)", // the editor's --bg
-		StateKey:        "main",
-		URL:             "/",
+		// The toolbar is the title bar: it drags the window and holds the
+		// window buttons (src/main.ts).
+		Frameless: true,
+		StateKey:  "main",
+		URL:       "/",
 	})
 	// Closing the window keeps cuteimg in the tray, ready for the shortcut.
 	win.OnClose(func(e *mygo.CloseEvent) {
@@ -143,20 +166,14 @@ func main() {
 
 	mygo.App.WhenReady(func() {
 		openEditor()
-		installShortcut()
-		_, err := mygo.NewTray(mygo.TrayOptions{
-			Icon:    trayIcon,
-			ToolTip: "cuteimg: " + shortcutLabel + " captures the screen",
-			Menu: mygo.NewMenu([]*mygo.MenuItem{
-				{Label: "Capture area\t" + shortcutLabel, Click: func(*mygo.MenuItem, *mygo.Window) { capture() }},
-				{Label: "Open editor", Click: func(*mygo.MenuItem, *mygo.Window) { showEditor() }},
-				mygo.Separator(),
-				{Label: "Quit cuteimg", Click: func(*mygo.MenuItem, *mygo.Window) { quitting = true; mygo.App.Quit() }},
-			}),
-		})
+		installHook()
+		var err error
+		tray, err = mygo.NewTray(mygo.TrayOptions{Icon: trayIcon, ToolTip: "cuteimg"})
 		if err != nil {
 			log.Println("tray:", err)
 		}
+		startShortcut()
+		updateTray()
 	})
 	if err := mygo.App.Run(); err != nil {
 		log.Fatal(err)
