@@ -7,7 +7,7 @@ export default defineConfig({
   // Signed updates from this repository's GitHub releases. The secret key
   // that signs them is the MYGO_UPDATER_PRIVATE_KEY secret of the repository.
   updates: {
-    publicKey: "6XTXuSOSuf2v3KNuDFjtX4H6QSjDktX7w9tqwg56NCA=",
+    publicKey: "+gGq209bSdf04cxnVKJ0EgQKWv2UMt7dhbqa0DHeNKs=",
     github: "RafalFilipek/cuteimg",
   },
   // `mygo dev` runs devCommand and loads devUrl; `mygo build` runs
