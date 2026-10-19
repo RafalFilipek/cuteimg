@@ -52,7 +52,7 @@ Download the latest build from [Releases](https://github.com/RafalFilipek/cuteim
 
 ## Build from source
 
-You need [Go](https://go.dev) and [Bun](https://bun.sh).
+You need [Go](https://go.dev) and [Bun](https://bun.sh). With [mise](https://mise.jdx.dev), `mise install` sets up Go from `mise.toml`.
 
 ```sh
 bun install
