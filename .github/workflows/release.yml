@@ -93,8 +93,12 @@ jobs:
       - name: Build, sign the updates and upload them to the draft release
         env:
           GH_TOKEN: ${{ github.token }}
-          MYGO_UPDATER_PRIVATE_KEY: ${{ secrets.MYGO_UPDATER_PRIVATE_KEY }}
-        run: bun run build -- -platform "${{ matrix.platform }}" -upload
+          SIGNING_KEY: ${{ secrets.MYGO_UPDATER_PRIVATE_KEY }}
+        shell: bash
+        run: |
+          # Keep only the base64 key: a secret pasted from Windows can carry a BOM or a line ending.
+          export MYGO_UPDATER_PRIVATE_KEY="$(printf %s "$SIGNING_KEY" | tr -cd 'A-Za-z0-9+/=')"
+          bun run build -- -platform "${{ matrix.platform }}" -upload
       - name: Upload the portable Windows app
         env:
           GH_TOKEN: ${{ github.token }}
