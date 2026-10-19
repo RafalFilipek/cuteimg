@@ -2,7 +2,10 @@
 
 Beautiful screenshots on Windows, macOS and Linux. Capture or paste a screenshot, put it on a gradient background, mark it up with arrows, rectangles and circles, pixelate anything private, then copy or save it. A CleanShot X–style editor built with [MyGo](https://mygo.egoist.dev).
 
-![cuteimg editor](docs/screenshot.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshot-dark.png">
+  <img alt="cuteimg editor" src="docs/screenshot.png">
+</picture>
 
 ## Features
 
