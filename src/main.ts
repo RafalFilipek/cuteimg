@@ -51,8 +51,10 @@ chrome.textContent = `
   body .winctl svg { width: 14px; height: 14px; }
   body .bar { flex-wrap: nowrap; }
   @media (max-width: 1420px) { body .bar .tbtn kbd { display: none; } }
-  @media (max-width: 1260px) { body .bar .tbtn:not(.primary) .lbl { display: none; } }
-  @media (max-width: 1080px) { body .bar .brand { font-size: 0; gap: 0; } .bar .primary .lbl { display: none; } }
+  @media (max-width: 1360px) { body .bar .tbtn:not(.primary) .lbl { display: none; } }
+  @media (max-width: 1200px) { body .bar .sw { width: 16px; height: 16px; margin: 0 1px; } body .bar .group .tbtn { min-width: 30px; padding: 0 6px; } }
+  @media (max-width: 1140px) { body .bar .brand { font-size: 0; gap: 0; margin-right: 0; } body .bar .primary .lbl { display: none; } }
+  body .bar .winctl { flex: none; }
 `;
 document.head.append(chrome);
 
