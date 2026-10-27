@@ -104,6 +104,8 @@ button { font: inherit; color: inherit; }
 .seg button:hover { color: var(--fg); }
 .seg button[aria-checked="true"] { background: var(--panel); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.12), 0 0 0 1px var(--line); }
 .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.seg.two { grid-template-columns: repeat(2, 1fr); }
+.textedit { position: fixed; z-index: 20; margin: 0; padding: 0; border: 0; outline: none; background: transparent; color: transparent; resize: none; overflow: hidden; white-space: pre; font-weight: 700; font-family: "Segoe UI", system-ui, -apple-system, sans-serif; }
 * { scrollbar-width: thin; scrollbar-color: var(--scroll) transparent; }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -150,6 +152,7 @@ button { font: inherit; color: inherit; }
     <button class="tbtn" data-tool="arrow" title="Arrow (A)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 19L19 5M10 5h9v9"/></svg><kbd>A</kbd></button>
     <button class="tbtn" data-tool="rect" title="Rectangle (R)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="6" width="16" height="12" rx="2"/></svg><kbd>R</kbd></button>
     <button class="tbtn" data-tool="ellipse" title="Circle / ellipse (O)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="12" rx="8" ry="7"/></svg><kbd>O</kbd></button>
+    <button class="tbtn" data-tool="text" title="Text (T)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 7V5h14v2M12 5v14M9 19h6"/></svg><kbd>T</kbd></button>
     <button class="tbtn" data-tool="pixel" title="Pixelate (P)"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="5" height="5"/><rect x="14" y="4" width="5" height="5" opacity=".5"/><rect x="9" y="9" width="5" height="5" opacity=".75"/><rect x="4" y="14" width="5" height="5" opacity=".5"/><rect x="14" y="14" width="5" height="5"/></svg><kbd>P</kbd></button>
   </div>
   <div class="group" id="colors" aria-label="Color"></div>
@@ -191,13 +194,21 @@ button { font: inherit; color: inherit; }
       <div class="row"><label for="blk">Block size</label><output id="blkOut"></output><input type="range" id="blk" min="4" max="40" step="2"></div>
       <p class="meta" id="meta"></p>
     </section>
+    <section>
+      <h2>Text</h2>
+      <div class="seg two" id="textSeg" role="radiogroup" aria-label="Text style">
+        <button role="radio" data-text-style="outline">Outline</button>
+        <button role="radio" data-text-style="label">Label</button>
+      </div>
+    </section>
     <details class="fold" id="keysFold">
       <summary><h2>Shortcuts</h2><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 6l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
       <dl class="keys" id="keys">
         <div><dt>Paste a screenshot</dt><dd><kbd>Ctrl</kbd><kbd>V</kbd></dd></div>
         <div><dt>Windows snip</dt><dd><kbd>Win</kbd><kbd>Shift</kbd><kbd>S</kbd></dd></div>
         <div><dt>Square, circle, 45°</dt><dd><span class="hold">hold</span><kbd>Shift</kbd></dd></div>
-        <div><dt>Tools</dt><dd><kbd>V</kbd><kbd>A</kbd><kbd>R</kbd><kbd>O</kbd><kbd>P</kbd></dd></div>
+        <div><dt>Tools</dt><dd><kbd>V</kbd><kbd>A</kbd><kbd>R</kbd><kbd>O</kbd><kbd>T</kbd><kbd>P</kbd></dd></div>
+        <div><dt>Edit text</dt><dd><span class="hold">double-click</span></dd></div>
         <div><dt>Undo</dt><dd><kbd>Ctrl</kbd><kbd>Z</kbd></dd></div>
         <div><dt>Copy result</dt><dd><kbd>Ctrl</kbd><kbd>C</kbd></dd></div>
         <div><dt>Save PNG</dt><dd><kbd>Ctrl</kbd><kbd>S</kbd></dd></div>
@@ -253,7 +264,7 @@ const store = {
 const st = {
   img: null, isSample: true,
   shapes: [], sel: -1,
-  tool: "arrow", color: COLORS[0], width: 7,
+  tool: "arrow", color: COLORS[0], width: 7, textStyle: store.get("textStyle", "outline"),
   bg: store.get("bg", "aurora"), grain: store.get("grain", true), customColor: store.get("customColor", "#5b6cff"),
   pad: store.get("pad", 64), rad: store.get("rad", 12), shadow: store.get("shadow", 40), block: store.get("block", 14),
   hist: ["[]"], hi: 0,
@@ -273,6 +284,7 @@ function distSeg(p, a, b) {
   return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
 }
 function hit(s, p, tol) {
+  if (s.type === "text") { const b = textBox(s); return p.x >= b.x - tol && p.x <= b.x + b.w + tol && p.y >= b.y - tol && p.y <= b.y + b.h + tol; }
   const t = tol + s.width / 2;
   if (s.type === "arrow") return distSeg(p, { x: s.x1, y: s.y1 }, { x: s.x2, y: s.y2 }) < t + 4;
   const b = norm(s);
@@ -290,6 +302,7 @@ function hit(s, p, tol) {
   return false;
 }
 function handles(s) {
+  if (s.type === "text") return [];
   if (s.type === "arrow") return [{ x: s.x1, y: s.y1, hx: "x1", hy: "y1" }, { x: s.x2, y: s.y2, hx: "x2", hy: "y2" }];
   return [
     { x: s.x1, y: s.y1, hx: "x1", hy: "y1" }, { x: s.x2, y: s.y1, hx: "x2", hy: "y1" },
@@ -365,8 +378,40 @@ function drawPixel(c, s) {
   c.drawImage(pixTmp, 0, 0, tw, th, x, y, tw * k, th * k);
   c.restore();
 }
+// Text: the size comes from the thickness buttons, scaled up for large screenshots.
+const TEXT_FS = { 4: 22, 7: 34, 12: 52 };
+const textFont = (fs) => `700 ${fs}px "Segoe UI", system-ui, -apple-system, sans-serif`;
+function contrast(hex) {
+  const n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.6 ? "#1c1c1e" : "#ffffff";
+}
+function textBox(s) {
+  const fs = (TEXT_FS[s.width] || 34) * (s.k || 1), lh = Math.round(fs * 1.25), lines = (s.text || "").split("\n");
+  ctx.save(); ctx.font = textFont(fs);
+  const tw = Math.max(fs * 0.5, ...lines.map((l) => ctx.measureText(l).width));
+  ctx.restore();
+  const label = s.style === "label", px = label ? fs * 0.45 : 0, py = label ? fs * 0.2 : 0;
+  return { x: s.x1, y: s.y1, w: tw + px * 2, h: lines.length * lh + py * 2, tx: s.x1 + px, ty: s.y1 + py, tw, fs, lh, lines };
+}
+function drawText(c, s) {
+  const b = textBox(s), ink = contrast(s.color);
+  s.x2 = b.x + b.w; s.y2 = b.y + b.h;
+  c.save();
+  c.shadowColor = "rgba(0,0,0,.28)"; c.shadowBlur = b.fs * 0.2; c.shadowOffsetY = b.fs * 0.05;
+  c.font = textFont(b.fs); c.textBaseline = "middle"; c.lineJoin = "round";
+  const each = (f) => b.lines.forEach((l, i) => f(l, b.tx, b.ty + b.lh * (i + 0.5)));
+  if (s.style === "label") {
+    roundPath(c, b.x, b.y, b.w, b.h, b.fs * 0.3); c.fillStyle = s.color; c.fill();
+    c.shadowColor = "transparent"; c.fillStyle = ink; each((l, x, y) => c.fillText(l, x, y));
+  } else {
+    c.strokeStyle = ink; c.lineWidth = b.fs * 0.16; each((l, x, y) => c.strokeText(l, x, y));
+    c.shadowColor = "transparent"; c.fillStyle = s.color; each((l, x, y) => c.fillText(l, x, y));
+  }
+  c.restore();
+}
 function drawShape(c, s) {
   if (s.type === "pixel") return;
+  if (s.type === "text") return drawText(c, s);
   c.save();
   c.shadowColor = "rgba(0,0,0,.28)"; c.shadowBlur = Math.max(3, s.width * 0.8); c.shadowOffsetY = Math.max(1, s.width * 0.2);
   if (s.type === "arrow") drawArrow(c, s);
@@ -399,6 +444,7 @@ function render(c, withUI) {
     const s = st.shapes[st.sel];
     if (s) {
       c.save();
+      if (s.type === "text") { const b = textBox(s), m = 4 * k; c.setLineDash([6 * k, 4 * k]); c.lineWidth = 1.5 * k; c.strokeStyle = "#3b5bfd"; c.strokeRect(b.x - m, b.y - m, b.w + m * 2, b.h + m * 2); c.setLineDash([]); }
       if (s.type === "pixel") { const b = norm(s); c.setLineDash([6 * k, 4 * k]); c.lineWidth = 1.5 * k; c.strokeStyle = "#3b5bfd"; c.strokeRect(b.x, b.y, b.w, b.h); c.setLineDash([]); }
       handles(s).forEach((h) => { c.beginPath(); c.arc(h.x, h.y, 6 * k, 0, Math.PI * 2); c.fillStyle = "#fff"; c.fill(); c.lineWidth = 2 * k; c.strokeStyle = "#3b5bfd"; c.stroke(); });
       c.restore();
@@ -420,6 +466,7 @@ function fit() {
   const sc = Math.max(0.05, Math.min(aw / cv.width, ah / cv.height, 1));
   cv.style.width = Math.floor(cv.width * sc) + "px"; cv.style.height = Math.floor(cv.height * sc) + "px";
   if (st.isSample) cv.style.marginTop = "40px"; else cv.style.marginTop = "0";
+  placeEditor();
 }
 new ResizeObserver(fit).observe($("#stage"));
 
@@ -437,6 +484,7 @@ function delSel() { if (st.sel >= 0) { st.shapes.splice(st.sel, 1); st.sel = -1;
 let drag = null, draft = null;
 cv.addEventListener("pointerdown", (e) => {
   if (!st.img || e.button !== 0) return;
+  endEdit();
   cv.setPointerCapture(e.pointerId);
   const p = toImg(e), k = cssScale(), tol = 6 * k;
   const s = st.shapes[st.sel];
@@ -450,6 +498,12 @@ cv.addEventListener("pointerdown", (e) => {
     if (hit(sh, p, tol)) { st.sel = i; drag = { mode: "move", start: p, orig: { ...sh } }; draw(); syncUI(); return; }
   }
   if (st.tool === "select") { st.sel = -1; draw(); syncUI(); return; }
+  if (st.tool === "text") {
+    const t = { type: "text", x1: p.x, y1: p.y, x2: p.x, y2: p.y, color: st.color, width: st.width, style: st.textStyle, text: "", k: Math.max(1, Math.round(st.img.width / 160) / 10) };
+    t.y1 -= textBox(t).h / 2;
+    st.shapes.push(t); editText(st.shapes.length - 1);
+    return;
+  }
   draft = { type: st.tool, x1: p.x, y1: p.y, x2: p.x, y2: p.y, color: st.color, width: st.width };
   if (st.tool === "pixel") draft.block = st.block;
   st.shapes.push(draft); st.sel = -1; drag = { mode: "draw", start: p };
@@ -483,13 +537,53 @@ function endDrag() {
   drag = null; commit(); draw(); syncUI();
 }
 cv.addEventListener("pointerup", endDrag);
+// Keep the text box focused: a click on the canvas would otherwise move focus away from it.
+cv.addEventListener("mousedown", (e) => { if (editing) e.preventDefault(); });
+cv.addEventListener("dblclick", (e) => {
+  const p = toImg(e), k = cssScale();
+  for (let i = st.shapes.length - 1; i >= 0; i--) if (st.shapes[i].type === "text" && hit(st.shapes[i], p, 6 * k)) return editText(i);
+});
+
+// ---------- text editing ----------
+// A transparent textarea over the canvas takes the typing and shows the caret;
+// the canvas draws the text itself, so it looks the same while you type.
+let editing = null;
+function editText(i) {
+  endEdit();
+  const s = st.shapes[i], ta = document.createElement("textarea");
+  ta.className = "textedit"; ta.value = s.text; ta.spellcheck = false;
+  ta.style.caretColor = s.style === "label" ? contrast(s.color) : s.color;
+  ta.oninput = () => { s.text = ta.value; placeEditor(); draw(); };
+  ta.onkeydown = (e) => { if ((e.key === "Enter" && !e.shiftKey) || e.key === "Escape") { e.preventDefault(); endEdit(); } };
+  ta.onblur = endEdit;
+  document.body.append(ta);
+  editing = { s, ta }; st.sel = i; placeEditor(); draw(); syncUI();
+  ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
+}
+function placeEditor() {
+  if (!editing) return;
+  const { s, ta } = editing, b = textBox(s), r = cv.getBoundingClientRect(), k = cv.width / r.width;
+  Object.assign(ta.style, {
+    left: r.left + (st.pad + b.tx) / k + "px", top: r.top + (st.pad + b.ty) / k + "px",
+    fontSize: b.fs / k + "px", lineHeight: b.lh / k + "px",
+    width: (b.tw + b.fs) / k + "px", height: (b.lines.length * b.lh) / k + "px",
+  });
+}
+function endEdit() {
+  if (!editing) return;
+  const { s, ta } = editing; editing = null; ta.remove();
+  s.text = s.text.replace(/\s+$/, "");
+  const i = st.shapes.indexOf(s);
+  if (!s.text.trim()) { if (i >= 0) st.shapes.splice(i, 1); st.sel = -1; } else st.sel = i;
+  commit(); draw(); syncUI();
+}
 cv.addEventListener("pointercancel", endDrag);
 function hoverCursor(e) {
   if (!st.img) return;
   const p = toImg(e), k = cssScale(), s = st.shapes[st.sel];
   if (s && handles(s).some((h) => Math.hypot(h.x - p.x, h.y - p.y) < 10 * k)) { cv.style.cursor = "grab"; return; }
   const over = st.shapes.some((sh) => (st.tool === "select" || sh.type !== "pixel") && hit(sh, p, 6 * k));
-  cv.style.cursor = over ? "move" : st.tool === "select" ? "default" : "crosshair";
+  cv.style.cursor = over ? "move" : st.tool === "select" ? "default" : st.tool === "text" ? "text" : "crosshair";
 }
 
 // ---------- image in ----------
@@ -502,6 +596,7 @@ async function loadBlob(blob) {
   } catch { toast("Couldn't read this image. Try a PNG or JPG."); }
 }
 function setImage(c, sample) {
+  if (editing) { editing.ta.remove(); editing = null; }
   st.img = c; st.isSample = sample; st.shapes = []; st.sel = -1; st.hist = ["[]"]; st.hi = 0;
   $("#sampleTag").hidden = !sample;
   cv.width = 1; draw(); syncUI();
@@ -569,6 +664,13 @@ colorsEl.onclick = (e) => { const c = e.target.dataset.c; if (!c) return; st.col
 $("#widths").onclick = (e) => { const b = e.target.closest("[data-w]"); if (!b) return; st.width = +b.dataset.w; applyToSel({ width: st.width }); syncUI(); };
 $("#tools").onclick = (e) => { const b = e.target.closest("[data-tool]"); if (b) setTool(b.dataset.tool); };
 function setTool(t) { st.tool = t; if (t !== "select") st.sel = st.sel; syncUI(); draw(); }
+const textSeg = $("#textSeg");
+textSeg.onclick = (e) => {
+  const b = e.target.closest("[data-text-style]"); if (!b) return;
+  st.textStyle = b.dataset.textStyle; store.set("textStyle", st.textStyle);
+  const s = st.shapes[st.sel]; if (s?.type === "text") { s.style = st.textStyle; commit(); draw(); }
+  syncUI();
+};
 function applyToSel(patch) { const s = st.shapes[st.sel]; if (s && s.type !== "pixel") { Object.assign(s, patch); commit(); draw(); } }
 $("#undo").onclick = undo; $("#redo").onclick = redo; $("#del").onclick = delSel;
 
@@ -599,6 +701,8 @@ function syncUI() {
   document.querySelectorAll("[data-tool]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.tool === st.tool));
   document.querySelectorAll(".sw").forEach((b) => b.setAttribute("aria-pressed", b.dataset.c === st.color));
   document.querySelectorAll("[data-w]").forEach((b) => b.setAttribute("aria-pressed", +b.dataset.w === st.width));
+  const ts = st.shapes[st.sel]?.type === "text" ? st.shapes[st.sel].style : st.textStyle;
+  textSeg.querySelectorAll("button").forEach((b) => b.setAttribute("aria-checked", b.dataset.textStyle === ts));
   document.querySelectorAll(".preset").forEach((b) => b.setAttribute("aria-pressed", b.dataset.id === st.bg));
   const cp = presetsEl.querySelector(".custom"); if (cp) cp.style.background = st.customColor;
   $("#undo").disabled = st.hi === 0; $("#redo").disabled = st.hi >= st.hist.length - 1; $("#del").disabled = st.sel < 0;
@@ -606,7 +710,7 @@ function syncUI() {
 }
 
 window.addEventListener("keydown", (e) => {
-  if (e.target.matches("input:not([type=range])")) return;
+  if (e.target.matches("input:not([type=range]), textarea")) return;
   const mod = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
   if (mod && k === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
   else if (mod && (k === "y" || (k === "z" && e.shiftKey))) { e.preventDefault(); redo(); }
@@ -615,7 +719,7 @@ window.addEventListener("keydown", (e) => {
   else if (mod && k === "o") { e.preventDefault(); $("#file").click(); }
   else if (!mod && (k === "delete" || k === "backspace")) { if (st.sel >= 0) { e.preventDefault(); delSel(); } }
   else if (k === "escape") { st.sel = -1; draw(); syncUI(); }
-  else if (!mod && !e.altKey) { const t = { v: "select", a: "arrow", r: "rect", o: "ellipse", p: "pixel" }[k]; if (t) setTool(t); }
+  else if (!mod && !e.altKey) { const t = { v: "select", a: "arrow", r: "rect", o: "ellipse", t: "text", p: "pixel" }[k]; if (t) setTool(t); }
 });
 
 // ---------- sample screenshot ----------
