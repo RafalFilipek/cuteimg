@@ -104,6 +104,9 @@ button { font: inherit; color: inherit; }
 .seg button:hover { color: var(--fg); }
 .seg button[aria-checked="true"] { background: var(--panel); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.12), 0 0 0 1px var(--line); }
 .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.tip { position: fixed; z-index: 30; display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 7px; background: var(--fg); color: var(--bg); font-size: 12px; font-weight: 500; white-space: nowrap; pointer-events: none; opacity: 0; transform: translateY(-2px); transition: opacity .12s, transform .12s; }
+.tip.show { opacity: 1; transform: none; }
+.tip kbd { font-family: var(--font-num); font-size: 10.5px; line-height: 1; padding: 3px 5px 2px; border-radius: 4px; background: color-mix(in srgb, var(--bg) 18%, transparent); }
 .seg.two { grid-template-columns: repeat(2, 1fr); }
 .textedit { position: fixed; z-index: 20; margin: 0; padding: 0; border: 0; outline: none; background: transparent; color: transparent; resize: none; overflow: hidden; white-space: pre; font-weight: 700; font-family: "Segoe UI", system-ui, -apple-system, sans-serif; }
 * { scrollbar-width: thin; scrollbar-color: var(--scroll) transparent; }
@@ -228,6 +231,7 @@ button { font: inherit; color: inherit; }
   </aside>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="tip" id="tip" role="tooltip"></div>
 
 <script>
 (() => {
@@ -494,7 +498,7 @@ cv.addEventListener("pointerdown", (e) => {
   }
   for (let i = st.shapes.length - 1; i >= 0; i--) {
     const sh = st.shapes[i];
-    if (st.tool !== "select" && sh.type === "pixel") continue;
+    if (sh.type === "pixel" && st.tool !== "select" && st.tool !== "pixel") continue;
     if (hit(sh, p, tol)) { st.sel = i; drag = { mode: "move", start: p, orig: { ...sh } }; draw(); syncUI(); return; }
   }
   if (st.tool === "select") { st.sel = -1; draw(); syncUI(); return; }
@@ -582,7 +586,7 @@ function hoverCursor(e) {
   if (!st.img) return;
   const p = toImg(e), k = cssScale(), s = st.shapes[st.sel];
   if (s && handles(s).some((h) => Math.hypot(h.x - p.x, h.y - p.y) < 10 * k)) { cv.style.cursor = "grab"; return; }
-  const over = st.shapes.some((sh) => (st.tool === "select" || sh.type !== "pixel") && hit(sh, p, 6 * k));
+  const over = st.shapes.some((sh) => (sh.type !== "pixel" || st.tool === "select" || st.tool === "pixel") && hit(sh, p, 6 * k));
   cv.style.cursor = over ? "move" : st.tool === "select" ? "default" : st.tool === "text" ? "text" : "crosshair";
 }
 
@@ -721,6 +725,31 @@ window.addEventListener("keydown", (e) => {
   else if (k === "escape") { st.sel = -1; draw(); syncUI(); }
   else if (!mod && !e.altKey) { const t = { v: "select", a: "arrow", r: "rect", o: "ellipse", t: "text", p: "pixel" }[k]; if (t) setTool(t); }
 });
+
+// ---------- tooltips ----------
+// Toolbar buttons show what they do and their shortcut on hover and keyboard focus.
+// A title like "Arrow (A)" becomes "Arrow" with an A key chip.
+const tip = $("#tip");
+let tipT, tipFor = null;
+function showTip(el) {
+  if (el.title) { el.dataset.tip = el.title; if (!el.getAttribute("aria-label")) el.setAttribute("aria-label", el.title.replace(/ \(.*\)$/, "")); el.removeAttribute("title"); }
+  const m = (el.dataset.tip || "").match(/^(.*?)(?: \((.+)\))?$/);
+  if (!m || !m[1]) return;
+  tip.textContent = m[1];
+  if (m[2]) m[2].split("+").forEach((k) => { const kb = document.createElement("kbd"); kb.textContent = k; tip.append(kb); });
+  const r = el.getBoundingClientRect(), w = tip.offsetWidth;
+  tip.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + "px";
+  tip.style.top = r.bottom + 8 + "px";
+  tip.classList.add("show"); tipFor = el;
+}
+function hideTip() { clearTimeout(tipT); tip.classList.remove("show"); tipFor = null; }
+const tipTarget = (e) => e.target.closest?.(".bar button:not(.sw)");
+const bar = $(".bar");
+bar.addEventListener("pointerover", (e) => { const el = tipTarget(e); if (!el || el === tipFor) return; clearTimeout(tipT); tipT = setTimeout(() => showTip(el), tip.classList.contains("show") ? 0 : 400); });
+bar.addEventListener("pointerout", (e) => { const el = tipTarget(e); if (el && !el.contains(e.relatedTarget)) hideTip(); });
+bar.addEventListener("focusin", (e) => { const el = tipTarget(e); if (el && el.matches(":focus-visible")) showTip(el); });
+bar.addEventListener("focusout", hideTip);
+bar.addEventListener("pointerdown", hideTip);
 
 // ---------- sample screenshot ----------
 function makeSample() {

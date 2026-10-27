@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1
+
+- Toolbar buttons show what they do and their shortcut when you hover or focus them.
+- With the Pixelate tool active, clicking a pixelated area selects it again, so you can move, resize or delete it.
+
 ## 0.2.0
 
 - Add text to screenshots with the new Text tool (T): bold text with an outline, or a label on a rounded color tag. Switch styles in the side panel, use Shift+Enter for a new line and double-click to edit.
