@@ -1,6 +1,6 @@
 # cuteimg
 
-Beautiful screenshots on Windows, macOS and Linux. Capture or paste a screenshot, put it on a gradient background, mark it up with arrows, rectangles and circles, pixelate anything private, then copy or save it. A CleanShot X–style editor built with [MyGo](https://mygo.egoist.dev).
+Beautiful screenshots on Windows, macOS and Linux. Capture or paste a screenshot, put it on a gradient background, mark it up with arrows, rectangles, circles and text, pixelate anything private, then copy or save it. A CleanShot X–style editor built with [MyGo](https://mygo.egoist.dev).
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshot-dark.png">
@@ -14,6 +14,7 @@ Beautiful screenshots on Windows, macOS and Linux. Capture or paste a screenshot
 - **Backgrounds:** mesh gradients (Aurora, Lava, Candy, Lagoon, Dusk, Neon, Holo, Forest, Peach, Ice), linear gradients, a rainbow, white, a custom color or none, with optional film grain.
 - **Frame:** padding, corner radius and drop shadow.
 - **Annotations:** arrows, rectangles and ellipses in eight colors and three thicknesses. Hold Shift for a square, a circle or a 45° arrow. Select, move, resize and delete them.
+- **Text** in two styles: bold text with an outline, or a label on a rounded color tag. Click to type, Shift+Enter for a new line, double-click to edit. The thickness buttons set its size.
 - **Pixelate** an area to hide emails, names or tokens, with an adjustable block size.
 - **Undo and redo** for every change.
 - **Copy** the result to the clipboard (Ctrl+C) or **save** a PNG (Ctrl+S).
@@ -25,7 +26,8 @@ Beautiful screenshots on Windows, macOS and Linux. Capture or paste a screenshot
 |---|---|---|---|
 | Capture an area (global, by default) | CapsLock+C | Cmd+Shift+2 | Ctrl+Shift+2 |
 | Paste an image | Ctrl+V | ⌘V | Ctrl+V |
-| Select / Arrow / Rectangle / Ellipse / Pixelate | V / A / R / O / P | same | same |
+| Select / Arrow / Rectangle / Ellipse / Text / Pixelate | V / A / R / O / T / P | same | same |
+| Edit a text | Double-click | Double-click | Double-click |
 | Undo / Redo | Ctrl+Z / Ctrl+Y | ⌘Z / ⌘⇧Z | Ctrl+Z / Ctrl+Y |
 | Delete the selected shape | Delete | Delete | Delete |
 | Copy the result | Ctrl+C | ⌘C | Ctrl+C |

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.0
+
+- Add text to screenshots with the new Text tool (T): bold text with an outline, or a label on a rounded color tag. Switch styles in the side panel, use Shift+Enter for a new line and double-click to edit.
+- The toolbar fits narrow windows without hiding the window buttons.
+
 ## 0.1.0
 
 The first release of cuteimg.
