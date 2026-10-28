@@ -60,14 +60,22 @@ button { font: inherit; color: inherit; }
 
 .main { flex: 1; display: flex; min-height: 0; }
 .stage {
-  flex: 1; min-width: 0; position: relative; display: grid; place-items: center; overflow: hidden;
-  padding: 24px max(16px, env(safe-area-inset-left, 0px));
+  flex: 1; min-width: 0; position: relative; display: grid; overflow: auto;
+  padding: 24px max(16px, env(safe-area-inset-left, 0px)) 60px;
   background-color: var(--check-b);
   background-image: linear-gradient(45deg, var(--check-a) 25%, transparent 25%, transparent 75%, var(--check-a) 75%),
                     linear-gradient(45deg, var(--check-a) 25%, transparent 25%, transparent 75%, var(--check-a) 75%);
   background-size: 20px 20px; background-position: 0 0, 10px 10px;
 }
-#cv { display: block; touch-action: none; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+#cv { display: block; margin: auto; touch-action: none; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+#cv.crisp { image-rendering: pixelated; }
+.stage.panning, .stage.panning #cv { cursor: grab !important; }
+.stagewrap { flex: 1; min-width: 0; position: relative; display: flex; }
+.zoom { position: absolute; right: 14px; bottom: 14px; display: flex; align-items: center; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+.zoom button { height: 26px; min-width: 26px; padding: 0 6px; border: 0; border-radius: 7px; background: transparent; color: var(--fg); cursor: pointer; display: grid; place-items: center; }
+.zoom button:hover { background: var(--hover); }
+.zoom button svg { width: 14px; height: 14px; }
+.zoom #zoomPct { min-width: 48px; font-family: var(--font-num); font-size: 11.5px; }
 .stage.drag::after { content: "Drop an image"; position: absolute; inset: 12px; border: 2px dashed var(--accent); border-radius: 14px; display: grid; place-items: center; font-size: 18px; font-weight: 600; background: color-mix(in srgb, var(--panel) 80%, transparent); }
 .sample-tag { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font-size: 13px; color: var(--muted); white-space: nowrap; max-width: calc(100% - 32px); overflow: hidden; text-overflow: ellipsis; }
 .sample-tag b { color: var(--fg); font-weight: 600; }
@@ -142,7 +150,7 @@ button { font: inherit; color: inherit; }
 @media (max-width: 760px) {
   body { overflow: auto; height: auto; }
   .main { flex-direction: column; }
-  .stage { min-height: 56vh; }
+  .stagewrap { min-height: 56vh; }
   .side { width: auto; border-left: 0; border-top: 1px solid var(--line); padding-left: max(16px, env(safe-area-inset-left, 0px)); }
   .tbtn kbd, .lbl { display: none; }
 }
@@ -177,9 +185,16 @@ button { font: inherit; color: inherit; }
 </header>
 
 <div class="main">
-  <div class="stage" id="stage">
-    <canvas id="cv" width="10" height="10" aria-label="Screenshot being edited"></canvas>
-    <div class="sample-tag" id="sampleTag">Example. <b>Paste your screenshot: Ctrl+V</b></div>
+  <div class="stagewrap">
+    <div class="stage" id="stage">
+      <canvas id="cv" width="10" height="10" aria-label="Screenshot being edited"></canvas>
+      <div class="sample-tag" id="sampleTag">Example. <b>Paste your screenshot: Ctrl+V</b></div>
+    </div>
+    <div class="zoom" role="group" aria-label="Zoom">
+      <button id="zoomOut" data-tip="Zoom out (Ctrl+-)" aria-label="Zoom out"><svg viewBox="0 0 16 16"><path d="M3.5 8h9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+      <button id="zoomPct" data-tip="Fit to window (Ctrl+0)" aria-label="Fit to window">100%</button>
+      <button id="zoomIn" data-tip="Zoom in (Ctrl+=)" aria-label="Zoom in"><svg viewBox="0 0 16 16"><path d="M3.5 8h9M8 3.5v9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+    </div>
   </div>
   <aside class="side">
     <section>
@@ -210,8 +225,10 @@ button { font: inherit; color: inherit; }
         <div><dt>Paste a screenshot</dt><dd><kbd>Ctrl</kbd><kbd>V</kbd></dd></div>
         <div><dt>Windows snip</dt><dd><kbd>Win</kbd><kbd>Shift</kbd><kbd>S</kbd></dd></div>
         <div><dt>Square, circle, 45°</dt><dd><span class="hold">hold</span><kbd>Shift</kbd></dd></div>
-        <div><dt>Tools</dt><dd><kbd>V</kbd><kbd>A</kbd><kbd>R</kbd><kbd>O</kbd><kbd>T</kbd><kbd>P</kbd></dd></div>
+        <div><dt>Tools</dt><dd><kbd data-tip="Select and move">V</kbd><kbd data-tip="Arrow">A</kbd><kbd data-tip="Rectangle">R</kbd><kbd data-tip="Circle / ellipse">O</kbd><kbd data-tip="Text">T</kbd><kbd data-tip="Pixelate">P</kbd></dd></div>
         <div><dt>Edit text</dt><dd><span class="hold">double-click</span></dd></div>
+        <div><dt>Zoom</dt><dd><kbd>Ctrl</kbd><span class="hold">+ wheel</span></dd></div>
+        <div><dt>Move around when zoomed</dt><dd><span class="hold">hold</span><kbd>Space</kbd></dd></div>
         <div><dt>Undo</dt><dd><kbd>Ctrl</kbd><kbd>Z</kbd></dd></div>
         <div><dt>Copy result</dt><dd><kbd>Ctrl</kbd><kbd>C</kbd></dd></div>
         <div><dt>Save PNG</dt><dd><kbd>Ctrl</kbd><kbd>S</kbd></dd></div>
@@ -466,13 +483,55 @@ function fit() {
   if (!st.img) return;
   const stage = $("#stage"), cs = getComputedStyle(stage);
   const aw = stage.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-  const ah = stage.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - (st.isSample ? 40 : 0);
-  const sc = Math.max(0.05, Math.min(aw / cv.width, ah / cv.height, 1));
-  cv.style.width = Math.floor(cv.width * sc) + "px"; cv.style.height = Math.floor(cv.height * sc) + "px";
-  if (st.isSample) cv.style.marginTop = "40px"; else cv.style.marginTop = "0";
+  const ah = stage.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  const sc = st.zoom ?? Math.max(0.05, Math.min(aw / cv.width, ah / cv.height, 1));
+  cv.style.width = Math.round(cv.width * sc) + "px"; cv.style.height = Math.round(cv.height * sc) + "px";
+  cv.classList.toggle("crisp", sc >= 2);
+  $("#zoomPct").textContent = Math.round(sc * 100) + "%";
   placeEditor();
 }
 new ResizeObserver(fit).observe($("#stage"));
+
+// ---------- zoom ----------
+// st.zoom is CSS pixels per image pixel, or null to fit the window. Zooming
+// keeps the point under the cursor (or the middle of the view) in place.
+const stageEl = $("#stage");
+function zoomTo(z, cx, cy) {
+  if (!st.img) return;
+  const sr = stageEl.getBoundingClientRect();
+  if (cx == null) { cx = sr.left + sr.width / 2; cy = sr.top + sr.height / 2; }
+  const r = cv.getBoundingClientRect(), fx = (cx - r.left) / r.width, fy = (cy - r.top) / r.height;
+  st.zoom = z == null ? null : Math.max(0.05, Math.min(8, z));
+  fit();
+  const r2 = cv.getBoundingClientRect();
+  stageEl.scrollLeft += r2.left + fx * r2.width - cx; stageEl.scrollTop += r2.top + fy * r2.height - cy;
+}
+const curZoom = () => 1 / cssScale();
+stageEl.addEventListener("wheel", (e) => {
+  if (!(e.ctrlKey || e.metaKey)) return;
+  e.preventDefault(); zoomTo(curZoom() * Math.exp(-e.deltaY * 0.002), e.clientX, e.clientY);
+}, { passive: false });
+$("#zoomIn").onclick = () => zoomTo(curZoom() * 1.25);
+$("#zoomOut").onclick = () => zoomTo(curZoom() / 1.25);
+$("#zoomPct").onclick = () => zoomTo(null);
+// Hold Space and drag to move around a zoomed image.
+let space = false, pan = null;
+window.addEventListener("keydown", (e) => {
+  if (e.code !== "Space" || e.repeat || e.target.matches("input, textarea")) return;
+  e.preventDefault(); space = true; stageEl.classList.add("panning");
+});
+window.addEventListener("keyup", (e) => { if (e.code === "Space") { space = false; stageEl.classList.remove("panning"); } });
+stageEl.addEventListener("pointerdown", (e) => {
+  if (space || e.button === 1) {
+    e.preventDefault(); e.stopPropagation();
+    pan = { x: e.clientX, y: e.clientY, l: stageEl.scrollLeft, t: stageEl.scrollTop }; stageEl.setPointerCapture(e.pointerId);
+    return;
+  }
+  // A click on the checkered area around the image ends editing and drops the selection.
+  if (e.target === stageEl) { endEdit(); if (st.sel >= 0) { st.sel = -1; draw(); syncUI(); } }
+}, true);
+stageEl.addEventListener("pointermove", (e) => { if (pan) { stageEl.scrollLeft = pan.l - (e.clientX - pan.x); stageEl.scrollTop = pan.t - (e.clientY - pan.y); } });
+stageEl.addEventListener("pointerup", () => { pan = null; });
 
 // ---------- history ----------
 function commit() {
@@ -603,6 +662,9 @@ function setImage(c, sample) {
   if (editing) { editing.ta.remove(); editing = null; }
   st.img = c; st.isSample = sample; st.shapes = []; st.sel = -1; st.hist = ["[]"]; st.hi = 0;
   $("#sampleTag").hidden = !sample;
+  // Make room for the example tag above the sample.
+  $("#stage").style.paddingTop = sample ? "64px" : "";
+  st.zoom = null;
   cv.width = 1; draw(); syncUI();
 }
 window.addEventListener("paste", (e) => {
@@ -721,6 +783,9 @@ window.addEventListener("keydown", (e) => {
   else if (mod && k === "s") { e.preventDefault(); savePng(); }
   else if (mod && k === "c") { if (!String(getSelection())) { e.preventDefault(); copyImage(); } }
   else if (mod && k === "o") { e.preventDefault(); $("#file").click(); }
+  else if (mod && (k === "=" || k === "+")) { e.preventDefault(); zoomTo(curZoom() * 1.25); }
+  else if (mod && k === "-") { e.preventDefault(); zoomTo(curZoom() / 1.25); }
+  else if (mod && k === "0") { e.preventDefault(); zoomTo(null); }
   else if (!mod && (k === "delete" || k === "backspace")) { if (st.sel >= 0) { e.preventDefault(); delSel(); } }
   else if (k === "escape") { st.sel = -1; draw(); syncUI(); }
   else if (!mod && !e.altKey) { const t = { v: "select", a: "arrow", r: "rect", o: "ellipse", t: "text", p: "pixel" }[k]; if (t) setTool(t); }
@@ -739,12 +804,13 @@ function showTip(el) {
   if (m[2]) m[2].split("+").forEach((k) => { const kb = document.createElement("kbd"); kb.textContent = k; tip.append(kb); });
   const r = el.getBoundingClientRect(), w = tip.offsetWidth;
   tip.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + "px";
-  tip.style.top = r.bottom + 8 + "px";
+  const below = r.bottom + 8 + tip.offsetHeight < innerHeight;
+  tip.style.top = (below ? r.bottom + 8 : r.top - 8 - tip.offsetHeight) + "px";
   tip.classList.add("show"); tipFor = el;
 }
 function hideTip() { clearTimeout(tipT); tip.classList.remove("show"); tipFor = null; }
-const tipTarget = (e) => e.target.closest?.(".bar button:not(.sw)");
-const bar = $(".bar");
+const tipTarget = (e) => e.target.closest?.(".bar button:not(.sw), [data-tip]");
+const bar = document;
 bar.addEventListener("pointerover", (e) => { const el = tipTarget(e); if (!el || el === tipFor) return; clearTimeout(tipT); tipT = setTimeout(() => showTip(el), tip.classList.contains("show") ? 0 : 400); });
 bar.addEventListener("pointerout", (e) => { const el = tipTarget(e); if (el && !el.contains(e.relatedTarget)) hideTip(); });
 bar.addEventListener("focusin", (e) => { const el = tipTarget(e); if (el && el.matches(":focus-visible")) showTip(el); });

@@ -6,7 +6,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/plugins/updater"
@@ -48,10 +50,28 @@ func (Editor) Save(png []byte, name string) (string, error) {
 // Capture starts a screen capture, the same as the global shortcut.
 func (Editor) Capture() { capture() }
 
-// Captured carries a fresh screen capture (PNG) to the editor.
-var Captured = mygo.NewEvent[[]byte]("captured")
+// Captured tells the editor that a fresh screen capture is waiting; the
+// editor fetches it with TakeCapture.
+var Captured = mygo.NewEvent[bool]("captured")
 
 var capturing atomic.Bool
+
+// pending holds the latest capture until the editor takes it. A window that
+// was just shown can miss the event or not repaint until it is clicked, so
+// the editor also asks for it whenever it gets focus or becomes visible.
+var (
+	pendingMu sync.Mutex
+	pending   []byte
+)
+
+// TakeCapture returns the capture waiting for the editor (PNG), once, or nothing.
+func (Editor) TakeCapture() []byte {
+	pendingMu.Lock()
+	defer pendingMu.Unlock()
+	img := pending
+	pending = nil
+	return img
+}
 
 // capture hides the editor, lets the user select an area of the screen with
 // the system's own tool, then shows the result in the editor.
@@ -75,8 +95,13 @@ func capture() {
 			log.Println("capture: canceled")
 		default:
 			log.Printf("capture: got %d bytes", len(img))
+			pendingMu.Lock()
+			pending = img
+			pendingMu.Unlock()
 			showEditor()
-			_ = Captured.Emit(win, img)
+			// Give the webview a moment to become visible before nudging it.
+			time.Sleep(150 * time.Millisecond)
+			_ = Captured.Emit(win, true)
 		}
 	}()
 }

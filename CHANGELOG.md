@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0
+
+- Zoom in and out with Ctrl+wheel, Ctrl+= and Ctrl+-, or the zoom control in the corner; Ctrl+0 fits the image to the window. Hold Space and drag to move around.
+- A new capture shows up in the editor right away, without clicking the window first.
+- Clicking the checkered area around the image drops the selection.
+- The tool letters in the Shortcuts list show which tool they pick.
+
 ## 0.2.1
 
 - Toolbar buttons show what they do and their shortcut when you hover or focus them.

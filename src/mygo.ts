@@ -46,6 +46,10 @@ export const Editor = {
   shortcut(): Promise<string> {
     return call("Editor.Shortcut");
   },
+  /** TakeCapture returns the capture waiting for the editor (PNG), once, or nothing. */
+  takeCapture(): Promise<string> {
+    return call("Editor.TakeCapture");
+  },
   /**
    * TestShortcut turns testing on or off: while on, pressing the shortcut sends
    * shortcutPressed instead of capturing the screen.
@@ -59,8 +63,11 @@ export const Editor = {
 
 /** Events sent by the Go side. Subscribe with `events.name.on(listener)`. */
 export const events = {
-  /** Captured carries a fresh screen capture (PNG) to the editor. */
-  captured: event<string>("captured"),
+  /**
+   * Captured tells the editor that a fresh screen capture is waiting; the
+   * editor fetches it with TakeCapture.
+   */
+  captured: event<boolean>("captured"),
   /** ShortcutPressed tells the editor that the shortcut works, while testing. */
   shortcutPressed: event<string>("shortcutPressed"),
 } as const;

@@ -32,9 +32,19 @@ window.cuteimgNative = {
   save: async (png, name) => Editor.save(await toBase64(png), name),
 };
 
-events.captured.on((png) => {
-  if (png) window.cuteimg.loadBlob(fromBase64(png));
-});
+// A capture waits in Go until the editor takes it: on the captured event, and
+// again whenever the window gets focus or becomes visible, in case the event
+// arrived while the window was still hidden.
+let taking: Promise<void> = Promise.resolve();
+function takeCapture() {
+  taking = taking.then(async () => {
+    const png = await Editor.takeCapture();
+    if (png) await window.cuteimg.loadBlob(fromBase64(png));
+  }).catch(() => {});
+}
+events.captured.on(() => takeCapture());
+window.addEventListener("focus", () => takeCapture());
+document.addEventListener("visibilitychange", () => { if (!document.hidden) takeCapture(); });
 
 // ---------- title bar ----------
 // The window is frameless: the toolbar drags it, and these buttons replace

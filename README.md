@@ -16,6 +16,7 @@ Beautiful screenshots on Windows, macOS and Linux. Capture or paste a screenshot
 - **Annotations:** arrows, rectangles and ellipses in eight colors and three thicknesses. Hold Shift for a square, a circle or a 45° arrow. Select, move, resize and delete them.
 - **Text** in two styles: bold text with an outline, or a label on a rounded color tag. Click to type, Shift+Enter for a new line, double-click to edit. The thickness buttons set its size.
 - **Pixelate** an area to hide emails, names or tokens, with an adjustable block size.
+- **Zoom** in to place annotations precisely, with Ctrl+wheel or the zoom control.
 - **Undo and redo** for every change.
 - **Copy** the result to the clipboard (Ctrl+C) or **save** a PNG (Ctrl+S).
 - Lives in the system tray, so closing the window keeps the shortcut working.
@@ -28,6 +29,8 @@ Beautiful screenshots on Windows, macOS and Linux. Capture or paste a screenshot
 | Paste an image | Ctrl+V | ⌘V | Ctrl+V |
 | Select / Arrow / Rectangle / Ellipse / Text / Pixelate | V / A / R / O / T / P | same | same |
 | Edit a text | Double-click | Double-click | Double-click |
+| Zoom in / out / fit | Ctrl+wheel, Ctrl+= / Ctrl+- / Ctrl+0 | ⌘+wheel, ⌘= / ⌘- / ⌘0 | Ctrl+wheel, Ctrl+= / Ctrl+- / Ctrl+0 |
+| Move around when zoomed | hold Space and drag | same | same |
 | Undo / Redo | Ctrl+Z / Ctrl+Y | ⌘Z / ⌘⇧Z | Ctrl+Z / Ctrl+Y |
 | Delete the selected shape | Delete | Delete | Delete |
 | Copy the result | Ctrl+C | ⌘C | Ctrl+C |
