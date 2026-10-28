@@ -395,7 +395,8 @@ function drawPixel(c, s) {
   pixTmp.width = tw; pixTmp.height = th;
   const pc = pixTmp.getContext("2d"); pc.imageSmoothingEnabled = true; pc.imageSmoothingQuality = "medium";
   pc.drawImage(st.img, x, y, w, h, 0, 0, tw, th);
-  c.save(); c.imageSmoothingEnabled = false;
+  // Whole blocks overshoot the selection, so clip them to its frame.
+  c.save(); c.beginPath(); c.rect(b.x, b.y, b.w, b.h); c.clip(); c.imageSmoothingEnabled = false;
   c.drawImage(pixTmp, 0, 0, tw, th, x, y, tw * k, th * k);
   c.restore();
 }

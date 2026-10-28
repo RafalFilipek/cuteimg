@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1
+
+- Pixelation stays inside its frame instead of spilling past it with large blocks.
+
 ## 0.3.0
 
 - Zoom in and out with Ctrl+wheel, Ctrl+= and Ctrl+-, or the zoom control in the corner; Ctrl+0 fits the image to the window. Hold Space and drag to move around.
