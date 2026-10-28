@@ -3,7 +3,7 @@ import { defineConfig } from "mygo-cli";
 export default defineConfig({
   name: "cuteimg",
   identifier: "io.github.rafalfilipek.cuteimg",
-  version: "0.2.1",
+  version: "0.3.0",
   // Signed updates from this repository's GitHub releases. The secret key
   // that signs them is the MYGO_UPDATER_PRIVATE_KEY secret of the repository.
   updates: {
