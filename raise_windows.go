@@ -10,10 +10,12 @@ var (
 	procSetForeground = user32.NewProc("SetForegroundWindow")
 	procBringToTop    = user32.NewProc("BringWindowToTop")
 	procShowWindow    = user32.NewProc("ShowWindow")
+	procIsIconic      = user32.NewProc("IsIconic")
 )
 
 const (
 	vkMenu    = 0x12
+	swShow    = 5
 	swRestore = 9
 )
 
@@ -28,7 +30,13 @@ func raise(w *mygo.Window) {
 	}
 	procKeybdEvent.Call(vkMenu, 0, 0, 0)
 	procKeybdEvent.Call(vkMenu, 0, keyeventfKeyUp, 0)
-	procShowWindow.Call(hwnd, swRestore)
+	// SW_RESTORE only when minimized: on a maximized window it would undo
+	// the maximize.
+	if iconic, _, _ := procIsIconic.Call(hwnd); iconic != 0 {
+		procShowWindow.Call(hwnd, swRestore)
+	} else {
+		procShowWindow.Call(hwnd, swShow)
+	}
 	procBringToTop.Call(hwnd)
 	procSetForeground.Call(hwnd)
 	// Topmost for a moment puts it above the snipping tool's leftovers.

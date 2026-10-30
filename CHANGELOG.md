@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.2
+
+- Canceling a capture with Esc or the snipping tool's close button no longer blocks the next one, and brings the editor back if you started from it.
+- A left click on the tray icon opens the editor.
+- A capture keeps a maximized editor maximized.
+- On Windows the window has the system's own minimize, maximize and close buttons, with snap layouts, and resizes from its top edge.
+- While typing text, a click elsewhere, Enter or Esc finishes the text, and the click doesn't start a new one.
+
 ## 0.3.1
 
 - Pixelation stays inside its frame instead of spilling past it with large blocks.

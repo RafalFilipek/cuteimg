@@ -54,7 +54,15 @@ func (Editor) Capture() { capture() }
 // editor fetches it with TakeCapture.
 var Captured = mygo.NewEvent[bool]("captured")
 
-var capturing atomic.Bool
+var (
+	capturing atomic.Bool
+	// captureGen numbers captures, so a capture started while another one
+	// still waits takes over and the older one gives up.
+	captureGen atomic.Int64
+	// reshow brings the editor back when a capture started from it is
+	// canceled.
+	reshow atomic.Bool
+)
 
 // pending holds the latest capture until the editor takes it. A window that
 // was just shown can miss the event or not repaint until it is clicked, so
@@ -76,16 +84,22 @@ func (Editor) TakeCapture() []byte {
 // capture hides the editor, lets the user select an area of the screen with
 // the system's own tool, then shows the result in the editor.
 func capture() {
-	if !capturing.CompareAndSwap(false, true) {
+	if !capturing.CompareAndSwap(false, true) && !restartableCapture {
 		return
 	}
+	gen := captureGen.Add(1)
+	stale := func() bool { return captureGen.Load() != gen }
 	go func() {
-		defer capturing.Store(false)
 		log.Println("capture: start")
-		if win != nil {
+		if win != nil && !win.IsDestroyed() && win.IsVisible() {
+			reshow.Store(true)
 			win.Hide()
 		}
-		img, err := snip()
+		img, err := snip(stale)
+		if stale() {
+			return // a newer capture took over
+		}
+		defer capturing.Store(false)
 		switch {
 		case err != nil:
 			log.Println("capture:", err)
@@ -93,7 +107,11 @@ func capture() {
 			mygo.Dialog.Error("Screen capture failed", err.Error())
 		case len(img) == 0:
 			log.Println("capture: canceled")
+			if reshow.Swap(false) {
+				showEditor()
+			}
 		default:
+			reshow.Store(false)
 			log.Printf("capture: got %d bytes", len(img))
 			pendingMu.Lock()
 			pending = img
@@ -112,7 +130,11 @@ func showEditor() {
 		return
 	}
 	win.Show()
-	win.Restore()
+	// Restore only a minimized window: on a maximized one it would undo the
+	// maximize.
+	if win.IsMinimized() {
+		win.Restore()
+	}
 	raise(win)
 	win.Focus()
 }
@@ -143,19 +165,20 @@ func updateTray() {
 }
 
 func openEditor() {
-	win = mygo.NewWindow(mygo.WindowOptions{
+	opts := mygo.WindowOptions{
 		Title:           "cuteimg",
 		Width:           1280,
 		Height:          820,
 		MinWidth:        980,
 		MinHeight:       480,
 		BackgroundColor: "light-dark(#eef0f4, #13151b)", // the editor's --bg
-		// The toolbar is the title bar: it drags the window and holds the
-		// window buttons (src/main.ts).
-		Frameless: true,
-		StateKey:  "main",
-		URL:       "/",
-	})
+		StateKey:        "main",
+		URL:             "/",
+	}
+	// The toolbar is the title bar: it drags the window, and holds the
+	// window buttons (see titlebar_*.go and src/main.ts).
+	titleBar(&opts)
+	win = mygo.NewWindow(opts)
 	// Closing the window keeps cuteimg in the tray, ready for the shortcut.
 	win.OnClose(func(e *mygo.CloseEvent) {
 		if !quitting {
@@ -199,6 +222,9 @@ func main() {
 		tray, err = mygo.NewTray(mygo.TrayOptions{Icon: trayIcon, ToolTip: "cuteimg"})
 		if err != nil {
 			log.Println("tray:", err)
+		} else {
+			// A left click opens the editor; a right click shows the menu.
+			tray.OnClick(showEditor)
 		}
 		startShortcut()
 		updateTray()

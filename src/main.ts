@@ -1,7 +1,7 @@
 // Connects the editor in index.html to Go: copying and saving go through the
 // system, screen captures from the global shortcut arrive as the captured
 // event, and the shortcut can be recorded and tested in a settings dialog.
-import { currentWindow } from "mygo-runtime";
+import { currentWindow, isMyGo, runtime } from "mygo-runtime";
 import { Editor, events } from "./mygo";
 
 declare global {
@@ -47,8 +47,11 @@ window.addEventListener("focus", () => takeCapture());
 document.addEventListener("visibilitychange", () => { if (!document.hidden) takeCapture(); });
 
 // ---------- title bar ----------
-// The window is frameless: the toolbar drags it, and these buttons replace
-// the system's.
+// The toolbar is the title bar and drags the window. On Windows the window
+// keeps the system's own buttons over the toolbar's right end (with snap
+// layouts and a resizable top edge), so the toolbar makes room for them;
+// elsewhere the window is frameless and these buttons replace the system's.
+const nativeButtons = isMyGo() && runtime().platform === "win32";
 
 const chrome = document.createElement("style");
 chrome.textContent = `
@@ -66,7 +69,10 @@ chrome.textContent = `
   @media (max-width: 1140px) { body .bar .brand { font-size: 0; gap: 0; margin-right: 0; } body .bar .primary .lbl { display: none; } }
   @media (max-width: 1060px) { body .bar { column-gap: 6px; } body .bar .group .tbtn { min-width: 28px; padding: 0 5px; } body .bar .sw { width: 14px; height: 14px; } }
   body .bar .winctl { flex: none; }
+  body.native-buttons .bar { padding-right: calc(var(--mygo-titlebar-inset-right, 138px) + 8px); }
+  body.native-buttons .winctl { display: none; }
 `;
+document.body.classList.toggle("native-buttons", nativeButtons);
 document.head.append(chrome);
 
 const winctl = document.createElement("div");

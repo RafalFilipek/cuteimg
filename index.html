@@ -529,7 +529,7 @@ stageEl.addEventListener("pointerdown", (e) => {
     return;
   }
   // A click on the checkered area around the image ends editing and drops the selection.
-  if (e.target === stageEl) { endEdit(); if (st.sel >= 0) { st.sel = -1; draw(); syncUI(); } }
+  if (e.target === stageEl) { endEdit(true); if (st.sel >= 0) { st.sel = -1; draw(); syncUI(); } }
 }, true);
 stageEl.addEventListener("pointermove", (e) => { if (pan) { stageEl.scrollLeft = pan.l - (e.clientX - pan.x); stageEl.scrollTop = pan.t - (e.clientY - pan.y); } });
 stageEl.addEventListener("pointerup", () => { pan = null; });
@@ -548,7 +548,8 @@ function delSel() { if (st.sel >= 0) { st.shapes.splice(st.sel, 1); st.sel = -1;
 let drag = null, draft = null;
 cv.addEventListener("pointerdown", (e) => {
   if (!st.img || e.button !== 0) return;
-  endEdit();
+  // A click while typing only finishes the text; it starts nothing new.
+  if (editing) { endEdit(true); return; }
   cv.setPointerCapture(e.pointerId);
   const p = toImg(e), k = cssScale(), tol = 6 * k;
   const s = st.shapes[st.sel];
@@ -618,8 +619,8 @@ function editText(i) {
   ta.className = "textedit"; ta.value = s.text; ta.spellcheck = false;
   ta.style.caretColor = s.style === "label" ? contrast(s.color) : s.color;
   ta.oninput = () => { s.text = ta.value; placeEditor(); draw(); };
-  ta.onkeydown = (e) => { if ((e.key === "Enter" && !e.shiftKey) || e.key === "Escape") { e.preventDefault(); endEdit(); } };
-  ta.onblur = endEdit;
+  ta.onkeydown = (e) => { if ((e.key === "Enter" && !e.shiftKey) || e.key === "Escape") { e.preventDefault(); endEdit(true); } };
+  ta.onblur = () => endEdit();
   document.body.append(ta);
   editing = { s, ta }; st.sel = i; placeEditor(); draw(); syncUI();
   ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
@@ -633,12 +634,14 @@ function placeEditor() {
     width: (b.tw + b.fs) / k + "px", height: (b.lines.length * b.lh) / k + "px",
   });
 }
-function endEdit() {
+// endEdit keeps the text; done drops the selection too, so it is clear that
+// typing is over (a click on a color or size keeps it selected instead).
+function endEdit(done) {
   if (!editing) return;
   const { s, ta } = editing; editing = null; ta.remove();
   s.text = s.text.replace(/\s+$/, "");
   const i = st.shapes.indexOf(s);
-  if (!s.text.trim()) { if (i >= 0) st.shapes.splice(i, 1); st.sel = -1; } else st.sel = i;
+  if (!s.text.trim()) { if (i >= 0) st.shapes.splice(i, 1); st.sel = -1; } else st.sel = done ? -1 : i;
   commit(); draw(); syncUI();
 }
 cv.addEventListener("pointercancel", endDrag);

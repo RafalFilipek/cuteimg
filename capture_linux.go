@@ -13,6 +13,10 @@ import (
 const defaultShortcut = "Ctrl+Shift+2"
 const capsName = "Ctrl"
 
+// restartableCapture is false: the capture tool here ends on its own when
+// the user cancels, and a second one must not start meanwhile.
+const restartableCapture = false
+
 // snipTools are area screenshot tools, tried in order; the first one that is
 // installed takes the capture. {out} is replaced by a temporary file.
 var snipTools = [][]string{
@@ -29,7 +33,7 @@ var need = []string{"slurp", "gnome-screenshot", "spectacle", "flameshot", "maim
 
 // snip runs the first installed area screenshot tool. It returns nil when
 // the user cancels.
-func snip() ([]byte, error) {
+func snip(stale func() bool) ([]byte, error) {
 	time.Sleep(150 * time.Millisecond)
 	out := filepath.Join(os.TempDir(), "cuteimg-capture.png")
 	for i, tool := range snipTools {
