@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.2
+## 0.3.2-beta.1
 
 - Canceling a capture with Esc or the snipping tool's close button no longer blocks the next one, and brings the editor back if you started from it.
 - A left click on the tray icon opens the editor.

@@ -64,8 +64,11 @@ jobs:
           TAG: ${{ needs.prepare.outputs.tag }}
         run: |
           if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            # A version such as 0.4.0-beta.1 is a pre-release: the updater
+            # doesn't offer it, so only people who install it by hand get it.
+            pre=""; [[ "$TAG" == *-* ]] && pre="--prerelease"
             gh release create "$TAG" --repo "$GITHUB_REPOSITORY" \
-              --draft --verify-tag --title "cuteimg $TAG" --generate-notes
+              --draft --verify-tag --title "cuteimg $TAG" --generate-notes $pre
           fi
 
   build:
